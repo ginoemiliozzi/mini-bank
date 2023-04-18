@@ -33,28 +33,7 @@ class BankRouter(mainBankActor: ActorRef[Command])(implicit
           errors.toList.map(_.errorMessage).mkString(" - ")
         )
     }
-  /*
-    POST /bank
-      Payload: bank account creation request
-      Response:
-        201 Created
-          Location: /bank/:uuid
-        400 Bad Request
 
-    GET /bank/:uuid
-      Response:
-       200 Ok
-        Bank acc as JSON
-       404 Not Found
-
-    PUT /bank/:uuid
-      Payload: (currency, amount) as json
-      Response:
-        200 Ok
-          Account updated as JSON
-        400 Bad request
-        404 Not Found
-   */
   val routes = pathPrefix("bank") {
     pathEndOrSingleSlash {
       post {
