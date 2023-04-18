@@ -93,39 +93,3 @@ object PersistentBank {
   ): ActorRef[Command] =
     context.spawn(PersistentBankAccount(accId), actorAccountName(accId))
 }
-
-object BankPlayGround {
-  def main(args: Array[String]): Unit = {
-    val rootBehavior: Behavior[NotUsed] = Behaviors.setup(context => {
-
-      implicit val timeOut: Timeout = Timeout(2.seconds)
-      implicit val scheduler: Scheduler = context.system.scheduler
-      implicit val ec: ExecutionContext = context.executionContext
-      val logger = context.log
-
-      val respHandler = context.spawn(
-        Behaviors.receiveMessage[Response] {
-          case BankAccountCreatedResp(accountId) =>
-            logger.info(s"Account created: $accountId")
-            Behaviors.same
-          case GetBankAccountResp(bankAccountO) =>
-            logger.info(s"Account details obtained: $bankAccountO")
-            Behaviors.same
-        },
-        "replyHandler"
-      )
-
-      val bankRef = context.spawn(PersistentBank(), "bank")
-
-      //bankRef ! CreateBankAccount("joe", "USD", 10.0, respHandler)
-      bankRef ! GetBankAccount(
-        "6f59d238-218f-4578-9ac1-8aaa5db03e1d",
-        respHandler
-      )
-
-      Behaviors.empty
-    })
-
-    val actorSystem = ActorSystem(rootBehavior, "BankDemo")
-  }
-}
