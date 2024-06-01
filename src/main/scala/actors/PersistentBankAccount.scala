@@ -63,25 +63,35 @@ object PersistentBankAccount {
 
         case UpdateBalance(
               _,
-              _,
+              currency,
               amount,
               bankActor
             ) =>
           val newBalance = state.balance + amount
-          if (newBalance < 0)
-            Effect.reply(bankActor)(
-              BankAccountBalanceUpdatedResp(
-                Failure(
-                  new RuntimeException("Cannot withdraw more than available")
+          val isDifferentCurrency = !state.currency.equalsIgnoreCase(currency)
+          val errorO = Option
+            .when(isDifferentCurrency)(
+              "Cannot operate with a different currency"
+            )
+            .orElse(
+              Option.when(newBalance < 0)("Cannot withdraw more than available")
+            )
+          errorO match {
+            case Some(error) =>
+              Effect.reply(bankActor)(
+                BankAccountBalanceUpdatedResp(
+                  Failure(
+                    new RuntimeException(error)
+                  )
                 )
               )
-            )
-          else
-            Effect
-              .persist(BalanceUpdated(amount))
-              .thenReply(bankActor)(newState =>
-                BankAccountBalanceUpdatedResp(Success(newState))
-              )
+            case None =>
+              Effect
+                .persist(BalanceUpdated(amount))
+                .thenReply(bankActor)(newState =>
+                  BankAccountBalanceUpdatedResp(Success(newState))
+                )
+          }
         case GetBankAccount(_, bankActor) =>
           Effect.reply(bankActor)(GetBankAccountResp(state.some))
       }
